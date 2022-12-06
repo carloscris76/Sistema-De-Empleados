@@ -1,82 +1,117 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SysEmpresa.EntidadesDeNegocio;
+using SysEmpresa.LogicaDeNegocio;
 
 namespace SysEmpresa.UI.AppWebAspCore.Controllers
 {
     public class EmpresaController : Controller
     {
+        EmpresaBL empresaBL = new EmpresaBL();
+        private object empleadoBL;
+
         // GET: EmpresaController
-        public ActionResult Index()
+        public async Task<IActionResult> Index(Empresa pEmpresa = null)
         {
-            return View();
+            if (pEmpresa == null)
+                pEmpresa = new Empresa();
+            if (pEmpresa.Top_Aux == 0)
+                pEmpresa.Top_Aux = 10;
+            else if (pEmpresa.Top_Aux == -1)
+                pEmpresa.Top_Aux = 0;
+            var taskBuscar = empresaBL.BuscarIncluirEmpleadoAsync(pEmpresa);
+            var taskObtenerTodosEmpleados = empresaBL.ObtenerTodosAsync();
+            var empresas = await taskBuscar;
+            ViewBag.Top = pEmpresa.Top_Aux;
+            ViewBag.Empleados = await taskObtenerTodosEmpleados;
+            return View(empresas);
         }
 
+
         // GET: EmpresaController/Details/5
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            return View();
+            var empresa = await empresaBL.ObtenerPorIdAsync(new Empresa { Id = id });
+            return View(empresa);
         }
 
         // GET: EmpresaController/Create
-        public ActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            ViewBag.Empleados = await empresaBL.ObtenerTodosAsync();
+            ViewBag.Error = "";
             return View();
         }
 
         // POST: EmpresaController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create(Empresa pEmpresa)
         {
             try
             {
+                int result = await empresaBL.CrearAsync(pEmpresa);
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ViewBag.Error = ex.Message;
+                ViewBag.Empleados = await empresaBL.ObtenerTodosAsync();
+                return View(pEmpresa);
             }
         }
 
         // GET: EmpresaController/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<IActionResult> Edit(Empresa pEmpresa)
         {
-            return View();
+            var taskObtenerPorId = empresaBL.ObtenerPorIdAsync(pEmpresa);
+            var taskObtenerTodosEmpleados = empresaBL.ObtenerTodosAsync();
+            var empresa = await taskObtenerPorId;
+            ViewBag.Empresa = await taskObtenerTodosEmpleados;
+            ViewBag.Error = "";
+            return View(empresa);
         }
 
         // POST: EmpresaController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(int id, Empresa pEmpresa)
         {
             try
             {
+                int result = await empresaBL.ModificarAsync(pEmpresa);
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ViewBag.Error = ex.Message;
+                ViewBag.Empleados = await empresaBL.ObtenerTodosAsync();
+                return View(pEmpresa);
             }
         }
 
         // GET: EmpresaController/Delete/5
-        public ActionResult Delete(int id)
+        public async Task<IActionResult> Delete(Empresa pEmpresa)
         {
-            return View();
+            var empresa = await empresaBL.ObtenerPorIdAsync(pEmpresa);
+            ViewBag.Error = "";
+            return View(empresa);
         }
 
         // POST: EmpresaController/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public async Task<IActionResult> Delete(int id, Empresa pEmpresa)
         {
             try
             {
+                int result = await empresaBL.EliminarAsync(pEmpresa);
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                ViewBag.Error = ex.Message;
+                return View(pEmpresa);
             }
         }
     }
